@@ -1,0 +1,52 @@
+networks:
+  dev_net:
+    driver: bridge
+services:
+  db:
+    container_name: ${PROJECT_NAME}-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    image: mysql:5.7
+    networks:
+      dev_net:
+    ports:
+    - ${PROJECT_IP}:3306:3306
+    restart: always
+    volumes:
+    - db-data:/var/lib/mysql
+  db-adm:
+    container_name: ${PROJECT_NAME}-db-adm
+    depends_on:
+    - db
+    environment:
+      MYSQL_USER: ${MYSQL_USER}
+    image: phpmyadmin/phpmyadmin:4.8.5
+    links:
+    - db
+    networks:
+      dev_net:
+    ports:
+    - ${PROJECT_IP}:8000:80
+  web:
+    build:
+      context: ./docker/wordpress
+    container_name: ${PROJECT_NAME}-web
+    depends_on:
+    - db
+    links:
+    - db
+    networks:
+      dev_net:
+    ports:
+    - ${PROJECT_IP}:80:80
+    volumes:
+    - ./public:/var/www/html
+    - ./docker/php/php.conf.ini:/usr/local/etc/php/conf.d/conf.ini
+    - ./docker/php/opcache-recommended.ini:/usr/local/etc/php/conf.d/opcache-recommended.ini
+    - ./docker/php/error-logging.ini:/usr/local/etc/php/conf.d/error-logging.ini
+
+
+version: '3.7'
+volumes:
+  db-data:
+    driver: local
